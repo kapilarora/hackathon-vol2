@@ -18,7 +18,13 @@ podTemplate(label: 'mypod', containers: [
             	sh "docker build -t webapp:${env.BUILD_NUMBER} ."
             }
         }
+        stage("Create Test instance") {
+            container('helm') {
 
+               sh "helm install --name test --set service.nodePort=30001,cloneSource=prod webapp"
+            }
+        }
+        
 
         stage('do some Docker work') {
             container('docker') {
