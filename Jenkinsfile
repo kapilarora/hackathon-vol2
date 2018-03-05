@@ -15,7 +15,7 @@ podTemplate(label: 'mypod', containers: [
             checkout scm
         }
         stage("Build Container"){
-            sh "sudo docker build -t webapp:$(env.BUILD_NUMBER} ."
+            sh "sudo docker build -t webapp:${env.BUILD_NUMBER} ."
         }
 
         stage('do some Docker work') {
