@@ -8,7 +8,6 @@ podTemplate(label: 'mypod', containers: [
   ]) {
     node('mypod') {
         
-        notifyBuild('STARTED')
         deleteDir()
         
         stage("Checkout") {
