@@ -41,6 +41,8 @@ spec:
       labels:
         app: {{ template "webapp.fullname" . }}
     spec:
+      nodeSelector:
+        app: web
       containers:
       - name: webapp
         image: {{.Values.webappImage.name}}:{{.Values.webappImage.tag}}
