@@ -1,8 +1,7 @@
 podTemplate(label: 'mypod', containers: [
     containerTemplate(name: 'docker', image: 'docker', ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'kubectl', image: 'lachlanevenson/k8s-kubectl:v1.8.0', command: 'cat', ttyEnabled: true),
-    containerTemplate(name: 'helm', image: 'lachlanevenson/k8s-helm:v2.7.2', command: 'cat', ttyEnabled: true),
-    containerTemplate(name: 'alpine', image: 'alpine:latest', command: 'cat', ttyEnabled: true)
+    containerTemplate(name: 'helm', image: 'lachlanevenson/k8s-helm:v2.7.2', command: 'cat', ttyEnabled: true)
   ],
   volumes: [
     hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
@@ -36,7 +35,7 @@ podTemplate(label: 'mypod', containers: [
         }
         
         stage ("Automated Test Cases"){
-          container('alpine') {
+          container('kubectl') {
             // give the container 10 seconds to initialize the web server
             sh "sleep 10"
 
