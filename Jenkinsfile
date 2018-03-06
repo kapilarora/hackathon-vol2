@@ -13,38 +13,53 @@ podTemplate(label: 'mypod', containers: [
         stage("Checkout") {
             checkout scm
         }
-        stage("Build Container"){
+        stage('Build and Push Container') {
             container('docker') {
-            	sh "docker build -t webapp:${env.BUILD_NUMBER} ."
+
+                withCredentials([[$class: 'UsernamePasswordMultiBinding',
+                        credentialsId: 'docker-hub-cred',
+                        usernameVariable: 'DOCKER_HUB_USER',
+                        passwordVariable: 'DOCKER_HUB_PASSWORD']]) {
+                    
+                    sh "docker build -t ${env.DOCKER_HUB_USER}/webapp:${env.BUILD_NUMBER} ."
+                    sh "docker login -u ${env.DOCKER_HUB_USER} -p ${env.DOCKER_HUB_PASSWORD} "
+                    sh "docker push ${env.DOCKER_HUB_USER}/webapp:${env.BUILD_NUMBER} "
+                }
             }
         }
         stage("Create Test instance") {
             container('helm') {
 
-               sh "helm install --name test --set service.nodePort=30001,cloneSource=prod webapp"
+               sh "helm install --name test --set service.nodePort=30001,cloneSource=prod,webImage.tag=${env.BUILD_NUMBER} webapp"
             }
         }
         
+        stage ("Automated Test Cases"){
+          // give the container 10 seconds to initialize the web server
+          sh "sleep 10"
 
-        stage('do some Docker work') {
-            container('docker') {
-
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', 
-                        credentialsId: 'docker-hub-cred',
-                        usernameVariable: 'DOCKER_HUB_USER', 
-                        passwordVariable: 'DOCKER_HUB_PASSWORD']]) {
-                    
-                    sh """
-                        docker pull ubuntu
-                        docker tag ubuntu ${env.DOCKER_HUB_USER}/ubuntu:${env.BUILD_NUMBER}
-                        """
-                    sh "docker login -u ${env.DOCKER_HUB_USER} -p ${env.DOCKER_HUB_PASSWORD} "
-                    sh "docker push ${env.DOCKER_HUB_USER}/ubuntu:${env.BUILD_NUMBER} "
-                }
-            }
+          // connect to the webapp and verify it listens and is connected to the db
+          //
+          // to get IP of jenkins host (which must be the same container host where dev instance runs)
+          // we passed it as an environment variable when starting Jenkins.  Very fragile but there is
+          // no other easy way without introducing service discovery of some sort
+          echo "Check if webapp port is listening and connected with db"
+          sh "curl http://10.168.42.5:30001/v1/ping -o curl.out"
+          sh "cat curl.out"
+          sh "awk \'/true/{f=1} END{exit!f}\' curl.out"
+          echo "<<<<<<<<<< Access this test build at http://10.168.42.5:30001 >>>>>>>>>>"        
         }
-
-        stage('do some kubectl work') {
+        def push = ""
+        stage ("Manual Test & Approve Push to Production"){
+          // Test instance is online.  Ask for approval to push to production.
+          notifyBuild('APPROVAL-REQUIRED')
+          push = input(
+            id: 'push', message: 'Push to production?', parameters: [
+              [$class: 'ChoiceParameterDefinition', choices: 'Yes\nNo', description: '', name: 'Select yes or no']
+            ]
+          )
+        }
+        stage('Deploy in Production') {
             container('kubectl') {
 
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', 
@@ -52,14 +67,14 @@ podTemplate(label: 'mypod', containers: [
                         usernameVariable: 'DOCKER_HUB_USER',
                         passwordVariable: 'DOCKER_HUB_PASSWORD']]) {
                     
-                    sh "kubectl get nodes"
+                    sh "kubectl set image deployments/prod-webapp webapp=${env.DOCKER_HUB_USER}/webapp:${env.BUILD_NUMBER}"
                 }
             }
         }
-        stage('do some helm work') {
+        stage('Delete test instance') {
             container('helm') {
 
-               sh "helm ls"
+               sh "helm delete --purge test"
             }
         }
     }
