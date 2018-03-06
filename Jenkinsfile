@@ -45,10 +45,10 @@ podTemplate(label: 'mypod', containers: [
           // we passed it as an environment variable when starting Jenkins.  Very fragile but there is
           // no other easy way without introducing service discovery of some sort
           echo "Check if webapp port is listening and connected with db"
-          // sh "curl http://10.168.42.5:30001/v1/ping -o curl.out"
+          // sh "curl http://192.168.42.5:30001/v1/ping -o curl.out"
           // sh "cat curl.out"
           // sh "awk \'/true/{f=1} END{exit!f}\' curl.out"
-          echo "<<<<<<<<<< Access this test build at http://10.168.42.5:30001 >>>>>>>>>>"        
+          echo "<<<<<<<<<< Access this test build at http://192.168.42.5:30001 >>>>>>>>>>"        
         }
         def push = ""
         stage ("Manual Test & Approve Push to Production"){
