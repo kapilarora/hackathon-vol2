@@ -35,21 +35,20 @@ podTemplate(label: 'mypod', containers: [
         }
         
         stage ("Automated Test Cases"){
-          container('kubectl') {
-            // give the container 10 seconds to initialize the web server
-            sh "sleep 10"
+          
+          // give the container 10 seconds to initialize the web server
+          sh "sleep 10"
 
-            // connect to the webapp and verify it listens and is connected to the db
-            //
-            // to get IP of jenkins host (which must be the same container host where dev instance runs)
-            // we passed it as an environment variable when starting Jenkins.  Very fragile but there is
-            // no other easy way without introducing service discovery of some sort
-            echo "Check if webapp port is listening and connected with db"
-            sh "curl http://10.168.42.5:30001/v1/ping -o curl.out"
-            sh "cat curl.out"
-            sh "awk \'/true/{f=1} END{exit!f}\' curl.out"
-            echo "<<<<<<<<<< Access this test build at http://10.168.42.5:30001 >>>>>>>>>>"        
-          }
+          // connect to the webapp and verify it listens and is connected to the db
+          //
+          // to get IP of jenkins host (which must be the same container host where dev instance runs)
+          // we passed it as an environment variable when starting Jenkins.  Very fragile but there is
+          // no other easy way without introducing service discovery of some sort
+          echo "Check if webapp port is listening and connected with db"
+          curl http://10.168.42.5:30001/v1/ping -o curl.out
+          cat curl.out
+          awk \'/true/{f=1} END{exit!f}\' curl.out
+          echo "<<<<<<<<<< Access this test build at http://10.168.42.5:30001 >>>>>>>>>>"        
         }
         def push = ""
         stage ("Manual Test & Approve Push to Production"){
